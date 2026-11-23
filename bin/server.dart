@@ -1,34 +1,41 @@
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart';
+import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 
-// Configure routes.
-final _router = Router()
-  ..get('/', _rootHandler)
-  ..get('/echo/<message>', _echoHandler);
+import '../lib/middleware/error_middleware.dart';
 
-Response _rootHandler(Request req) {
-  return Response.ok('Hello, World!\n');
-}
+Future <void> main() async {
+  final port = int.tryParse(Platform.environment['PORT'] ?? '') ?? 8080;
 
-Response _echoHandler(Request request) {
-  final message = request.params['message'];
-  return Response.ok('$message\n');
-}
+  final healt = Router()
+    ..get('/api/health', (Request req) => jsonResponse({'status' : 'ok'}));
 
-void main(List<String> args) async {
-  // Use any available host or container IP (usually `0.0.0.0`).
-  final ip = InternetAddress.anyIPv4;
+  final api = Cascade()
+  .add(healt.call)
+  .add((Request req) => jsonError(404,'Risorsa non trovata'))
+  .handler;
 
-  // Configure a pipeline that logs requests.
-  final handler = Pipeline()
-      .addMiddleware(logRequests())
-      .addHandler(_router.call);
+  final handler = const Pipeline()
+  .addMiddleware(logRequests())
+  .addMiddleware(errorMiddleware())
+  .addHandler(api);
 
-  // For running in containers, we respect the PORT environment variable.
-  final port = int.parse(Platform.environment['PORT'] ?? '8080');
-  final server = await serve(handler, ip, port);
-  print('Server listening on port ${server.port}');
+  final server = await io.serve(handler, InternetAddress.anyIPv4, port);
+  print('Bacheca beckend in ascolto sulla porta ${server.port}');
+  print('Emulatore android: http://10.0.2.2:${server.port}');
+  try{
+    final interfaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+    );
+    for (final iface in interfaces) {
+      for(final addr in iface.addresses){
+        print('Usa questo URL nell\'app http://${addr.address}:${server.port}');
+      }
+    }
+  } catch(_){
+    print('Impossibile leggere gli indirizzi di rete locali');
+  }
 }
