@@ -4,12 +4,17 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 
-import '../lib/controllers/auth_controller.dart'; // NUOVO
-import '../lib/dao/azienda_dao.dart'; // NUOVO
-import '../lib/dao/json_store.dart'; // NUOVO
-import '../lib/middleware/auth_middleware.dart'; // NUOVO
+import '../lib/controllers/annuncio_controller.dart'; // NUOVO
+import '../lib/controllers/auth_controller.dart';
+import '../lib/controllers/candidatura_controller.dart'; // NUOVO
+import '../lib/dao/annuncio_dao.dart'; // NUOVO
+import '../lib/dao/azienda_dao.dart';
+import '../lib/dao/candidatura_dao.dart'; // NUOVO
+import '../lib/dao/json_store.dart';
+import '../lib/middleware/auth_middleware.dart';
 import '../lib/middleware/error_middleware.dart';
-import '../lib/services/token_service.dart'; // NUOVO
+import '../lib/services/cv_storage.dart'; // NUOVO
+import '../lib/services/token_service.dart';
 
 Future<void> main() async {
   final dataDir = Platform.environment['DATA_DIR'] ?? 'data'; // NUOVO: cartella dei dati (default "data")
@@ -20,6 +25,13 @@ Future<void> main() async {
   final aziendaDao = AziendaDao(JsonCollection('$dataDir/aziende.json'));
   await aziendaDao.load();
 
+  final annuncioDao = AnnuncioDao(JsonCollection('$dataDir/annunci.json')); // NUOVO: annunci su file
+  await annuncioDao.load(); // NUOVO: li carica all'avvio
+  final candidaturaDao = CandidaturaDao(JsonCollection('$dataDir/candidature.json')); // NUOVO: candidature su file
+  await candidaturaDao.load(); // NUOVO
+  final cvStorage = CvStorage(Platform.environment['UPLOADS_DIR'] ?? 'uploads'); // NUOVO: cartella dei CV
+  await cvStorage.init(); // NUOVO: crea uploads/ se manca
+
   final tokens = TokenService(); // NUOVO: gestore dei token (uno solo per tutto il server)
 
   final health = Router()
@@ -27,7 +39,9 @@ Future<void> main() async {
 
   final api = Cascade()
       .add(health.call)
-      .add(AuthController(aziendaDao, tokens).router.call) // NUOVO: endpoint /api/auth/...
+      .add(AuthController(aziendaDao, tokens).router.call)
+      .add(AnnuncioController(annuncioDao, candidaturaDao).router.call) // NUOVO: /api/annunci, /api/me/annunci
+      .add(CandidaturaController(annuncioDao, candidaturaDao, cvStorage).router.call) // NUOVO: candidature e CV
       .add((Request req) => jsonError(404, 'Risorsa non trovata'))
       .handler;
 
