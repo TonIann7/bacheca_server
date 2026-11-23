@@ -4,23 +4,39 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 
+import '../lib/controllers/auth_controller.dart'; // NUOVO
+import '../lib/dao/azienda_dao.dart'; // NUOVO
+import '../lib/dao/json_store.dart'; // NUOVO
+import '../lib/middleware/auth_middleware.dart'; // NUOVO
 import '../lib/middleware/error_middleware.dart';
+import '../lib/services/token_service.dart'; // NUOVO
 
-Future <void> main() async {
+Future<void> main() async {
+  final dataDir = Platform.environment['DATA_DIR'] ?? 'data'; // NUOVO: cartella dei dati (default "data")
   final port = int.tryParse(Platform.environment['PORT'] ?? '') ?? 8080;
+  await Directory(dataDir).create(recursive: true); // NUOVO: crea data/ se non esiste
 
-  final healt = Router()
-    ..get('/api/health', (Request req) => jsonResponse({'status' : 'ok'}));
+  // NUOVO: DAO delle aziende, salvato in data/aziende.json, caricato all'avvio
+  final aziendaDao = AziendaDao(JsonCollection('$dataDir/aziende.json'));
+  await aziendaDao.load();
+
+  final tokens = TokenService(); // NUOVO: gestore dei token (uno solo per tutto il server)
+
+  final health = Router()
+    ..get('/api/health', (Request req) => jsonResponse({'status': 'ok'}));
 
   final api = Cascade()
-  .add(healt.call)
-  .add((Request req) => jsonError(404,'Risorsa non trovata'))
-  .handler;
+      .add(health.call)
+      .add(AuthController(aziendaDao, tokens).router.call) // NUOVO: endpoint /api/auth/...
+      .add((Request req) => jsonError(404, 'Risorsa non trovata'))
+      .handler;
 
   final handler = const Pipeline()
-  .addMiddleware(logRequests())
-  .addMiddleware(errorMiddleware())
-  .addHandler(api);
+      .addMiddleware(logRequests())
+      .addMiddleware(errorMiddleware())
+      .addMiddleware(authMiddleware(tokens, aziendaDao)) // NUOVO: legge il token di ogni richiesta
+      .addHandler(api);
+
 
   final server = await io.serve(handler, InternetAddress.anyIPv4, port);
   print('Bacheca beckend in ascolto sulla porta ${server.port}');

@@ -20,3 +20,22 @@ String requiredText(Map<String, dynamic> body, String key, String label) {
   }
   return value.trim();
 }
+
+// Email obbligatoria e con un formato plausibile (testo@testo.testo).
+String requiredEmail(Map<String, dynamic> body) {
+  final email = requiredText(body, 'email', 'Email'); // prima: non deve essere vuota
+  final valida = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email); // espressione regolare: qualcosa@qualcosa.qualcosa
+  if (!valida) {
+    throw ApiException(422, 'Email non valida'); // 422 = dati non validi
+  }
+  return email.toLowerCase(); // salviamo le email sempre in minuscolo
+}
+
+// Password obbligatoria, lunga almeno 6 caratteri (non facciamo trim: gli spazi possono far parte della password).
+String requiredPassword(Map<String, dynamic> body) {
+  final password = body['password']; // valore inviato dall'app
+  if (password is! String || password.length < 6) { // mancante, non testo, oppure troppo corta
+    throw ApiException(422, 'La password deve avere almeno 6 caratteri');
+  }
+  return password;
+}

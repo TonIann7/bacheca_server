@@ -1,5 +1,4 @@
 import 'dart:convert'; ///trasforma oggetti Dart in testo JSON
-import 'dart:ffi';
 import 'dart:io';///stdderr -> terminale
 
 import 'package:shelf/shelf.dart';

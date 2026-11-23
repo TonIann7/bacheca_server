@@ -1,0 +1,10 @@
+[
+ {
+  "id": 1,
+  "nome": "Acme",
+  "email": "info@acme.it",
+  "passwordHash": "2561d59d0973a921876bb3280f33f45fef9333727606338944a4842421cb774c",
+  "salt": "WKANZMA99JGzEs9ictd20w==",
+  "createdAt": "2026-11-23T17:43:54.632670Z"
+ }
+]
