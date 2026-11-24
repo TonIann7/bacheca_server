@@ -53,6 +53,9 @@ class CandidaturaController {
   // POST /api/annunci/3/candidature
   // body: {"nome", "cognome", "email", "cvNome": "cv.pdf", "cvBase64": "<il PDF codificato in base64>"}
   Future<Response> _create(Request req, String id) async {
+    if (currentAzienda(req) != null) { // c'è un'azienda loggata
+      throw ApiException(403, 'Le aziende non possono candidarsi'); // 403 = operazione non consentita
+    }
     final annuncio = _annuncioOr404(id); // l'annuncio deve esistere
     final body = await readJsonObject(req);
     final nome = requiredText(body, 'nome', 'Nome');

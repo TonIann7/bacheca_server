@@ -4,3 +4,7 @@
 # Dati generati a runtime (persistenza) e curriculum caricati
 data/
 uploads/
+# PDF di prova e impostazioni di Android Studio
+/*.pdf
+.idea/
+*.iml

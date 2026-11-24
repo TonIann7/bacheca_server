@@ -1,49 +1,41 @@
-A server app built using [Shelf](https://pub.dev/packages/shelf),
-configured to enable running with [Docker](https://www.docker.com/).
+# Bacheca Lavoro - Server
 
-This sample code handles HTTP GET requests to `/` and `/echo/<message>`
+Back-end dell'app "Bacheca Lavoro" (corso EMAD), scritto in Dart con Shelf.
+Il front-end è qui: https://github.com/TonIann7/bacheca_app
 
-# Running the sample
+## Avvio
 
-## Running with the Dart SDK
-
-You can run the example with the [Dart SDK](https://dart.dev/get-dart)
-like this:
-
-```
-$ dart run bin/server.dart
-Server listening on port 8080
+```bash
+dart pub get              # scarica i pacchetti
+dart run bin/server.dart  # avvia il server sulla porta 8080
 ```
 
-And then from a second terminal:
-```
-$ curl http://0.0.0.0:8080
-Hello, World!
-$ curl http://0.0.0.0:8080/echo/I_love_Dart
-I_love_Dart
-```
+All'avvio il server stampa l'indirizzo da usare nell'app.
 
-## Running with Docker
+## Persistenza
 
-If you have [Docker Desktop](https://www.docker.com/get-started) installed, you
-can build and run with the `docker` command:
+- `data/`: aziende, annunci e candidature in file JSON
+- `uploads/`: curriculum in PDF (massimo 5 MB)
 
-```
-$ docker build . -t myserver
-$ docker run -it -p 8080:8080 myserver
-Server listening on port 8080
-```
+Le due cartelle vengono create all'avvio e non sono incluse nella repository.
 
-And then from a second terminal:
-```
-$ curl http://0.0.0.0:8080
-Hello, World!
-$ curl http://0.0.0.0:8080/echo/I_love_Dart
-I_love_Dart
-```
+## API
 
-You should see the logging printed in the first terminal:
-```
-2021-05-06T15:47:04.620417  0:00:00.000158 GET     [200] /
-2021-05-06T15:47:08.392928  0:00:00.001216 GET     [200] /echo/I_love_Dart
-```
+| Metodo | Indirizzo | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/api/health` | pubblico | verifica che il server sia attivo |
+| POST | `/api/auth/register` | pubblico | registrazione azienda |
+| POST | `/api/auth/login` | pubblico | login |
+| POST | `/api/auth/logout` | azienda | logout |
+| GET | `/api/auth/me` | azienda | dati dell'azienda autenticata |
+| GET | `/api/annunci` | pubblico | bacheca |
+| GET | `/api/annunci/<id>` | pubblico | dettaglio annuncio |
+| POST | `/api/annunci` | azienda | pubblicazione annuncio |
+| GET | `/api/me/annunci` | azienda | annunci dell'azienda |
+| POST | `/api/annunci/<id>/candidature` | pubblico | invio candidatura |
+| GET | `/api/annunci/<id>/candidature` | azienda proprietaria | candidature ricevute |
+| GET | `/api/candidature/<id>` | azienda proprietaria | dati del candidato |
+| GET | `/api/candidature/<id>/cv` | azienda proprietaria | curriculum in PDF |
+
+Gli endpoint riservati richiedono l'header `Authorization: Bearer <token>`.
+Le password sono salvate come hash SHA-256 con salt.
